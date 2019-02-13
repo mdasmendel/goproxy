@@ -29,6 +29,7 @@ type ProxyHttpServer struct {
 	// ConnectDial will be used to create TCP connections for CONNECT requests
 	// if nil Tr.Dial will be used
 	ConnectDial func(network string, addr string) (net.Conn, error)
+	localAddrChan chan net.TCPAddr
 }
 
 var hasPort = regexp.MustCompile(`:\d+$`)
@@ -149,7 +150,7 @@ func (proxy *ProxyHttpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 }
 
 // NewProxyHttpServer creates and returns a proxy server, logging to stderr by default
-func NewProxyHttpServer() *ProxyHttpServer {
+func NewProxyHttpServer(localAddrChanel chan net.TCPAddr) *ProxyHttpServer {
 	proxy := ProxyHttpServer{
 		Logger:        log.New(os.Stderr, "", log.LstdFlags),
 		reqHandlers:   []ReqHandler{},
@@ -161,6 +162,6 @@ func NewProxyHttpServer() *ProxyHttpServer {
 		Tr: &http.Transport{TLSClientConfig: tlsClientSkipVerify, Proxy: http.ProxyFromEnvironment},
 	}
 	proxy.ConnectDial = dialerFromEnv(&proxy)
-
+	proxy.localAddrChan = localAddrChanel
 	return &proxy
 }

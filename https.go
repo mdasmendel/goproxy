@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -15,6 +16,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 type ConnectActionLiteral int
@@ -51,10 +53,18 @@ func stripPort(s string) string {
 }
 
 func (proxy *ProxyHttpServer) dial(network, addr string) (c net.Conn, err error) {
-	if proxy.Tr.Dial != nil {
-		return proxy.Tr.Dial(network, addr)
+	localAddr := <- proxy.localAddrChan
+	fmt.Printf("use local address %v", localAddr.IP)
+	d := net.Dialer{
+		LocalAddr:&localAddr,
+		Timeout:   time.Second,
+		KeepAlive: 0,
+		DualStack: false,
 	}
-	return net.Dial(network, addr)
+	//if proxy.Tr.Dial != nil {
+	//	return proxy.Tr.Dial(network, addr)
+	//}
+	return d.Dial(network, addr)
 }
 
 func (proxy *ProxyHttpServer) connectDial(network, addr string) (c net.Conn, err error) {
